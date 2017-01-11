@@ -48,7 +48,7 @@ var importEvents = function(callback) {
 }
 
 var increasePlayerProperty = function(playerTable, player, property, increase) {
-  if (!playerTable[player]) playerTable[player] = { rank: 1200, doublesPlayed: 0, doublesWon: 0, doublesLost: 0, singlesPlayed: 0, singlesWon: 0, singlesLost: 0 };
+  if (!playerTable[player]) playerTable[player] = { name: player, rank: 1200, doublesPlayed: 0, doublesWon: 0, doublesLost: 0, singlesPlayed: 0, singlesWon: 0, singlesLost: 0 };
   playerTable[player][property] = (playerTable[player][property] || 0) + increase;
 }
 
@@ -117,7 +117,20 @@ var calculateTable = function(events) {
       }
     }
   })
-  console.log(players);
+  var playerTable = [];
+  Object.keys(players).forEach(function(player) {
+    players[player].gamesPlayed = players[player].singlesWon + players[player].singlesLost + players[player].doublesWon + players[player].doublesLost;
+    playerTable.push(players[player]);
+  });
+  playerTable.sort(function(a, b) {
+    if (a.gamesPlayed < 10 && b.gamesPlayed > 10) return 1;
+    if (a.gamesPlayed > 10 && b.gamesPlayed < 10) return -1;
+    if (a.rank < b.rank) return 1;
+    if (a.rank > b.rank) return -1;
+
+    return 0;
+  });
+  console.log(playerTable);
 }
 
 importEvents(calculateTable);
