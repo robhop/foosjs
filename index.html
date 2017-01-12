@@ -14,7 +14,7 @@
 }
 
 </style>
-<svg width="960" height="500"></svg>
+<svg width="1200" height="500"></svg>
 <script src="http://d3js.org/d3.v4.min.js"></script>
 <script>
 
@@ -40,21 +40,21 @@ d3.json("data.json",function(error, data) {
 
   var dates = [];
   var cities = data.map(function(o) {
-    var b = {
+    return {
       id: o.name,
+      count: o.events.length,
       values: o.events.map(function(d) {
       	var x =parseTime(d.timestamp);
       	dates.push(x);
         return {date: x, temperature: d.score};
-      })};
-    b.values.sort(function(a,b){return a.date - b.date});
-    return b;
-    });
+      })
+    };
+  });
 
   //dates = cities.map(parseTime(d.timestamp));
  
  for (var i = cities.length - 1; i >= 0; i--) {
- 	if(cities[i].values.length == 0)
+ 	if(cities[i].values.length <= 1)
  		cities.splice(i, 1);
 
  };
@@ -64,8 +64,7 @@ d3.json("data.json",function(error, data) {
 
 console.log(d3.min(cities, function(c) { return d3.min(c.values, function(d) { return d.temperature; }); }));
   y.domain([
-    //d3.min(cities, function(c) { return d3.min(c.values, function(d) { return d.temperature; }); }),
-    1100,
+    d3.min(cities, function(c) { return d3.min(c.values, function(d) { return d.temperature; }); }),
     d3.max(cities, function(c) { return d3.max(c.values, function(d) { return d.temperature; }); })
   ]);
 
@@ -97,7 +96,7 @@ console.log(d3.min(cities, function(c) { return d3.min(c.values, function(d) { r
       .style("stroke", function(d) { return z(d.id); });
 
   city.append("text")
-      .datum(function(d) { return {id: d.id, value: d.values[d.values.length - 1]}; })
+      .datum(function(d) { return {id: d.id + ' ' + d.count , value: d.values[d.values.length - 1]}; })
       .attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.temperature) + ")"; })
       .attr("x", 3)
       .attr("dy", "0.35em")
