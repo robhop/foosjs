@@ -11,7 +11,7 @@ var eventdefs =
 ]
 
 var importEvents = function(callback) {
-  fs.readFile(__dirname + '/data/audittrail.xml', function(err, data) {
+  fs.readFile(__dirname + '/sampledata/audittrail.xml', function(err, data) {
     parser.parseString(data, function (err, result) {
       var events = result.audittrail.item.map(
         function(entry) {
