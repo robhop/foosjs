@@ -7,7 +7,8 @@ var eventdefs =
 [
   { type: "doublematch", rex: /(.+) and (.+) won a doubles match agains (.+) and (.+)\./i, properties: ['winner_1', 'winner_2', 'loser_1', 'loser_2'] },
   { type: "singlematch", rex: /(.+) won a singles match agains (.+)\./i, properties: ['winner_1', 'loser_1'] },
-  { type: "adjustment", rex: /Manual adjustment of player (.+): SW: (\d+)->(\d+), SL: (\d+)->(\d+), DW: (\d+)->(\d+), DL: (\d+)->(\d+), Points: (\d+)->(\d+)/i, properties: ['player', 'sw_from', 'sw_to', 'sl_from', 'sl_to', 'dw_from', 'dw_to', 'dl_from', 'dl_to', 'points_from', 'points_to'] }
+  { type: "adjustment", rex: /Manual adjustment of player (.+): SW: (\d+)->(\d+), SL: (\d+)->(\d+), DW: (\d+)->(\d+), DL: (\d+)->(\d+), Points: (\d+)->(\d+)/i, properties: ['player', 'sw_from', 'sw_to', 'sl_from', 'sl_to', 'dw_from', 'dw_to', 'dl_from', 'dl_to', 'points_from', 'points_to'] },
+  { type: "audittrail", rex: /(.+)'s score changed to (\d+) \((\d+) points was (\w+)\)\./i, properties: ['player', 'score', 'diff', 'operator'] }
 ]
 
 var importEvents = function(callback) {
@@ -49,8 +50,21 @@ var importEvents = function(callback) {
 
 var increasePlayerProperty = function(playerTable, player, property, increase) 
 {
-  if (!playerTable[player]) playerTable[player] = { name: player, rank: 1200, doublesPlayed: 0, doublesWon: 0, doublesLost: 0, singlesPlayed: 0, singlesWon: 0, singlesLost: 0 };
+  if (!playerTable[player]) playerTable[player] = { name: player, rank: 1200, doublesPlayed: 0, doublesWon: 0, doublesLost: 0, singlesPlayed: 0, singlesWon: 0, singlesLost: 0, events: []};
   playerTable[player][property] = (playerTable[player][property] || 0) + increase;
+}
+
+var addGameEvent = function(playerTable, player, score, diff, operator, timestamp)
+{
+  if (!playerTable[player]) playerTable[player] = { name: player, rank: 1200, doublesPlayed: 0, doublesWon: 0, doublesLost: 0, singlesPlayed: 0, singlesWon: 0, singlesLost: 0, events: []};
+  
+  var _diff = 0;
+  if(operator == 'added')
+    _diff =+ diff;
+  else
+    _diff =- diff;
+
+  playerTable[player].events.push({timestamp: timestamp, score: +score, diff: _diff});
 }
 
 var byEventTime = function(a, b) 
@@ -118,12 +132,19 @@ var applyEvent = function(ev)
       increasePlayerProperty(players, ev.data.player, 'singlesLost', ev.data.sl_to - players[ev.data.player].singlesLost);
       increasePlayerProperty(players, ev.data.player, 'rank', ev.data.points_to - players[ev.data.player].rank);
       break;
+
+    case 'audittrail':
+      //console.dir(ev.data);
+      addGameEvent(players, ev.data.player, ev.data.score, ev.data.diff, ev.data.operator, ev.time);
+      break;
   }
 }
 
 var players = {};
 
 var calculateTable = function(events) {
+
+ // console.dir(events);
   events
     .sort(byEventTime)
     .forEach(applyEvent);
@@ -141,7 +162,7 @@ var calculateTable = function(events) {
 
     return 0;
   });
-  console.log(playerTable);
+  console.log("%j",playerTable);
 }
 
 importEvents(calculateTable);
