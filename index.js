@@ -47,76 +47,87 @@ var importEvents = function(callback) {
   });
 }
 
-var increasePlayerProperty = function(playerTable, player, property, increase) {
+var increasePlayerProperty = function(playerTable, player, property, increase) 
+{
   if (!playerTable[player]) playerTable[player] = { name: player, rank: 1200, doublesPlayed: 0, doublesWon: 0, doublesLost: 0, singlesPlayed: 0, singlesWon: 0, singlesLost: 0 };
   playerTable[player][property] = (playerTable[player][property] || 0) + increase;
 }
 
-var calculateTable = function(events) {
-  var players = {};
-  events.sort(function(a, b) {
-    if (a.time < b.time) return -1;
-    if (a.time > b.time) return 1;
-    return 0;
-  }).forEach(function(ev) {
-    switch (ev.type) {
-      case 'singlematch':
-        increasePlayerProperty(players, ev.data.winner_1, 'singlesWon', 1);
-        increasePlayerProperty(players, ev.data.loser_1, 'singlesLost', 1);
+var byEventTime = function(a, b) 
+{
+  if (a.time < b.time) return -1;
+  if (a.time > b.time) return 1;
+  return 0;
+};
 
-        var totalWinnerRank = players[ev.data.winner_1].rank;
-        var totalLoserRank = players[ev.data.loser_1].rank;
-        var scorePerPlayer = 10;
-        if (totalWinnerRank > totalLoserRank) {
-          scorePerPlayer = 5;
-          if (totalWinnerRank > totalLoserRank + 100)
-            scorePerPlayer = 0;
-        } else {
-          if (totalWinnerRank < totalLoserRank - 100)
-          {
-            scorePerPlayer = 20;
-          } 
-        }
+var applyEvent = function(ev) 
+{
+  switch (ev.type) {
+    case 'singlematch':
+      increasePlayerProperty(players, ev.data.winner_1, 'singlesWon', 1);
+      increasePlayerProperty(players, ev.data.loser_1, 'singlesLost', 1);
 
-        increasePlayerProperty(players, ev.data.winner_1, 'rank', scorePerPlayer);
-        increasePlayerProperty(players, ev.data.loser_1, 'rank', -scorePerPlayer);
-        break;
-      case 'doublematch':
-        increasePlayerProperty(players, ev.data.winner_1, 'doublesWon', 1);
-        increasePlayerProperty(players, ev.data.winner_2, 'doublesWon', 1);
-        increasePlayerProperty(players, ev.data.loser_1, 'doublesLost', 1);
-        increasePlayerProperty(players, ev.data.loser_2, 'doublesLost', 1);
-
-        var totalWinnerRank = players[ev.data.winner_1].rank + players[ev.data.winner_2].rank;
-        var totalLoserRank = players[ev.data.loser_1].rank + players[ev.data.loser_2].rank;
-
-        var scorePerPlayer = 5;
-        if (totalWinnerRank > totalLoserRank) {
-          scorePerPlayer = 3;
-          if (totalWinnerRank > totalLoserRank + 100)
-            scorePerPlayer = 0;
-        } else {
-          if (totalWinnerRank < totalLoserRank - 100)
-          {
-            scorePerPlayer = 10;
-          } 
-        }
-
-        increasePlayerProperty(players, ev.data.winner_1, 'rank', scorePerPlayer);
-        increasePlayerProperty(players, ev.data.winner_2, 'rank', scorePerPlayer);
-        increasePlayerProperty(players, ev.data.loser_1, 'rank', -scorePerPlayer);
-        increasePlayerProperty(players, ev.data.loser_2, 'rank', -scorePerPlayer);
-
-        break;
-      case 'adjustment': {
-        increasePlayerProperty(players, ev.data.player, 'doublesWon', ev.data.dw_to - players[ev.data.player].doublesWon);
-        increasePlayerProperty(players, ev.data.player, 'doublesLost', ev.data.dl_to - players[ev.data.player].doublesLost);
-        increasePlayerProperty(players, ev.data.player, 'singlesWon', ev.data.sw_to - players[ev.data.player].singlesWon);
-        increasePlayerProperty(players, ev.data.player, 'singlesLost', ev.data.sl_to - players[ev.data.player].singlesLost);
-        increasePlayerProperty(players, ev.data.player, 'rank', ev.data.points_to - players[ev.data.player].rank);
+      var totalWinnerRank = players[ev.data.winner_1].rank;
+      var totalLoserRank = players[ev.data.loser_1].rank;
+      var scorePerPlayer = 10;
+      if (totalWinnerRank > totalLoserRank) {
+        scorePerPlayer = 5;
+        if (totalWinnerRank > totalLoserRank + 100)
+          scorePerPlayer = 0;
+      } else {
+        if (totalWinnerRank < totalLoserRank - 100)
+        {
+          scorePerPlayer = 20;
+        } 
       }
-    }
-  })
+
+      increasePlayerProperty(players, ev.data.winner_1, 'rank', scorePerPlayer);
+      increasePlayerProperty(players, ev.data.loser_1, 'rank', -scorePerPlayer);
+      break;
+    case 'doublematch':
+      increasePlayerProperty(players, ev.data.winner_1, 'doublesWon', 1);
+      increasePlayerProperty(players, ev.data.winner_2, 'doublesWon', 1);
+      increasePlayerProperty(players, ev.data.loser_1, 'doublesLost', 1);
+      increasePlayerProperty(players, ev.data.loser_2, 'doublesLost', 1);
+
+      var totalWinnerRank = players[ev.data.winner_1].rank + players[ev.data.winner_2].rank;
+      var totalLoserRank = players[ev.data.loser_1].rank + players[ev.data.loser_2].rank;
+
+      var scorePerPlayer = 5;
+      if (totalWinnerRank > totalLoserRank) {
+        scorePerPlayer = 3;
+        if (totalWinnerRank > totalLoserRank + 100)
+          scorePerPlayer = 0;
+      } else {
+        if (totalWinnerRank < totalLoserRank - 100)
+        {
+          scorePerPlayer = 10;
+        } 
+      }
+
+      increasePlayerProperty(players, ev.data.winner_1, 'rank', scorePerPlayer);
+      increasePlayerProperty(players, ev.data.winner_2, 'rank', scorePerPlayer);
+      increasePlayerProperty(players, ev.data.loser_1, 'rank', -scorePerPlayer);
+      increasePlayerProperty(players, ev.data.loser_2, 'rank', -scorePerPlayer);
+
+      break;
+    case 'adjustment':
+      increasePlayerProperty(players, ev.data.player, 'doublesWon', ev.data.dw_to - players[ev.data.player].doublesWon);
+      increasePlayerProperty(players, ev.data.player, 'doublesLost', ev.data.dl_to - players[ev.data.player].doublesLost);
+      increasePlayerProperty(players, ev.data.player, 'singlesWon', ev.data.sw_to - players[ev.data.player].singlesWon);
+      increasePlayerProperty(players, ev.data.player, 'singlesLost', ev.data.sl_to - players[ev.data.player].singlesLost);
+      increasePlayerProperty(players, ev.data.player, 'rank', ev.data.points_to - players[ev.data.player].rank);
+      break;
+  }
+}
+
+var players = {};
+
+var calculateTable = function(events) {
+  events
+    .sort(byEventTime)
+    .forEach(applyEvent);
+
   var playerTable = [];
   Object.keys(players).forEach(function(player) {
     players[player].gamesPlayed = players[player].singlesWon + players[player].singlesLost + players[player].doublesWon + players[player].doublesLost;
