@@ -97,6 +97,14 @@ var applyEvent = function(ev)
 
       increasePlayerProperty(players, ev.data.winner_1, 'rank', scorePerPlayer);
       increasePlayerProperty(players, ev.data.loser_1, 'rank', -scorePerPlayer);
+
+      games.push({
+        timestamp: ev.time,
+        type:'singlematch',
+        winner_1: ev.data.winner_1, 
+        loser_1: ev.data.loser_1,
+        scorePerPlayer: scorePerPlayer
+      });      
       break;
     case 'doublematch':
       increasePlayerProperty(players, ev.data.winner_1, 'doublesWon', 1);
@@ -124,6 +132,16 @@ var applyEvent = function(ev)
       increasePlayerProperty(players, ev.data.loser_1, 'rank', -scorePerPlayer);
       increasePlayerProperty(players, ev.data.loser_2, 'rank', -scorePerPlayer);
 
+      games.push({
+        timestamp: ev.time,
+        type:'doublematch',
+        winner_1: ev.data.winner_1, 
+        winner_2: ev.data.winner_2,
+        loser_1: ev.data.loser_1,
+        loser_2: ev.data.loser_2,
+        scorePerPlayer: scorePerPlayer
+      });
+
       break;
     case 'adjustment':
       increasePlayerProperty(players, ev.data.player, 'doublesWon', ev.data.dw_to - players[ev.data.player].doublesWon);
@@ -141,6 +159,7 @@ var applyEvent = function(ev)
 }
 
 var players = {};
+var games = [];
 
 var calculateTable = function(events) {
 
@@ -162,7 +181,7 @@ var calculateTable = function(events) {
 
     return 0;
   });
-  console.log("%j",playerTable);
+  console.log("%j",{playerTable:playerTable,games:games});
 }
 
 importEvents(calculateTable);

@@ -24,11 +24,17 @@ var svg = d3.select("svg"),
     height = svg.attr("height") - margin.top - margin.bottom,
     g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+
+
 var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S.%LZ");
 
 var x = d3.scaleTime().range([0, width]),
     y = d3.scaleLinear().range([height, 0]),
-    z = d3.scaleOrdinal(d3.schemeCategory10);
+    z = d3.scaleOrdinal(d3.schemeCategory10);   
+
+var focus = svg.append("g")
+    .attr("class", "focus")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 var line = d3.line()
     .curve(d3.curveBasis)
@@ -38,8 +44,19 @@ var line = d3.line()
 d3.json("data.json",function(error, data) {
   if (error) throw error;
 
+
+  var zoom = d3.zoom()
+    .scaleExtent([1, 2])
+    .translateExtent([[0, 0], [width, height]])
+    .extent([[0, 0], [width, height]])
+    .on("zoom", zoomed);
+
+
+var xAxis = d3.axisBottom(x),
+    yAxis = d3.axisLeft(y);
+
   var dates = [];
-  var cities = data.map(function(o) {
+  var cities = data.playerTable.map(function(o) {
     return {
       id: o.name,
       count: o.events.length,
@@ -51,18 +68,22 @@ d3.json("data.json",function(error, data) {
     };
   });
 
+  var games = data.games.map(function(o) {
+    o.date = parseTime(o.timestamp);
+    return o;
+  });
+
+  console.log(games);
+
   //dates = cities.map(parseTime(d.timestamp));
  
  for (var i = cities.length - 1; i >= 0; i--) {
  	if(cities[i].values.length <= 1)
  		cities.splice(i, 1);
-
  };
- console.log(cities);
 
   x.domain(d3.extent(dates));
 
-console.log(d3.min(cities, function(c) { return d3.min(c.values, function(d) { return d.temperature; }); }));
   y.domain([
     d3.min(cities, function(c) { return d3.min(c.values, function(d) { return d.temperature; }); }),
     d3.max(cities, function(c) { return d3.max(c.values, function(d) { return d.temperature; }); })
@@ -70,14 +91,14 @@ console.log(d3.min(cities, function(c) { return d3.min(c.values, function(d) { r
 
   z.domain(cities.map(function(c) { return c.id; }));
 
-  g.append("g")
+  var gX = focus.append("g")
       .attr("class", "axis axis--x")
       .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x));
+      .call(xAxis);
 
-  g.append("g")
+  var gY = focus.append("g")
       .attr("class", "axis axis--y")
-      .call(d3.axisLeft(y))
+      .call(yAxis)
     .append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", 6)
@@ -89,6 +110,17 @@ console.log(d3.min(cities, function(c) { return d3.min(c.values, function(d) { r
     .data(cities)
     .enter().append("g")
       .attr("class", "city");
+ 
+  var game = g.selectAll("circle")
+    .data(games)
+    .enter().append("circle")
+      .on("mouseover", function(d) {  d3.select(this).attr("r", 5.5);})
+      .on("mouseout", function(d) {  d3.select(this).attr("r", 2);})
+      .attr("class", "game")
+      .attr("transform", function(d) { return "translate(" + x(d.date) + "," + y(1200) + ")"; })
+      .attr("r", 2)
+      .style("fill", function(d, i) { return z(d.winner_1); });
+
 
   city.append("path")
       .attr("class", "line")
@@ -103,6 +135,27 @@ console.log(d3.min(cities, function(c) { return d3.min(c.values, function(d) { r
       .style("font", "10px sans-serif")
       .text(function(d) { return d.id; });
 
+  //svg.call(zoom);
+  svg.call(zoom)
+  /*.transition()
+      .duration(1500) */
+
+      .call(zoom.transform, d3.zoomIdentity
+          .scale(width / (1200))
+          .translate(10, 0));
+
+  function zoomed() {
+    console.log(" " + d3.event.transform);
+    //g.attr("transform", d3.event.transform);
+   // g.attr("transform", "scale(" + d3.event.transform.x + ", 1)");
+   g.attr("transform", "translate(" + d3.event.transform.x + "," + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
+  
+    gX.call(xAxis.scale(d3.event.transform.rescaleX(x)));
+    gY.call(yAxis.scale(d3.event.transform.rescaleY(y)));
+  }
+
 });
+
+
 
 </script>
